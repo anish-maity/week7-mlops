@@ -26,10 +26,12 @@ jobs:
 
       # Step 2: Authenticate to Google Cloud & Artifact Registry
       - name: Authenticate to Google Cloud
-        run: |
-          echo "${{ secrets.GCP_SERVICE_KEY }}" > key.json
-          gcloud auth activate-service-account --key-file=key.json --project=${{ env.PROJECT_ID }}
-          gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+          # Recommended: Use Workload Identity Federation (GCP_SERVICE_KEY is less secure)
+          service_account_key: ${{ secrets.GCP_SERVICE_KEY }} 
+          export_default_credentials: true
 
       # Step 3: Build Docker image
       - name: Build Docker image
