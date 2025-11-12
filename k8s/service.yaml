@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: iris-log-service
+  labels:
+    app: iris-log
+spec:
+  type: LoadBalancer
+  selector:
+    app: iris-log
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 8100

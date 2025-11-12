@@ -1,0 +1,22 @@
+# Core web framework
+fastapi==0.110.1
+uvicorn[standard]==0.27.1
+
+# Data and ML dependencies
+pydantic==2.7.1
+joblib==1.4.2
+pandas==2.2.2
+scikit-learn==1.7.2
+
+numpy==1.26.4
+
+# Logging and telemetry
+opentelemetry-api==1.30.0
+opentelemetry-sdk==1.30.0
+opentelemetry-exporter-gcp-trace==1.11.0
+opentelemetry-semantic-conventions==0.51b0
+opentelemetry-instrumentation-fastapi==0.51b0
+opentelemetry-instrumentation-requests==0.51b0
+
+# Google Cloud integration
+

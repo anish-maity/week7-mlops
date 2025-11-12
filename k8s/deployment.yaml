@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: iris-log-deployment
+  labels:
+    app: iris-log
+spec:
+  replicas: 1  # default pod availability = 1
+  selector:
+    matchLabels:
+      app: iris-log
+  template:
+    metadata:
+      labels:
+        app: iris-log
+    spec:
+      serviceAccountName: telemetry-access # 👈 binds K8s SA to GCP SA for Workload Identity
+      containers:
+      - name: iris-log-container
+        image: us-central1-docker.pkg.dev/fresh-bloom-472914-s8/iris-repo/iris_log_app:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8100
+        resources:
+          requests:
+            cpu: "250m"
+            memory: "256Mi"
+          limits:
+            cpu: "500m"
+            memory: "512Mi"
+        readinessProbe:
+          httpGet:
+            path: /ready_check
+            port: 8100
+          initialDelaySeconds: 10
+          periodSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /live_check
+            port: 8100
+          initialDelaySeconds: 10
+          periodSeconds: 5
+
