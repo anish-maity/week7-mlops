@@ -37,7 +37,7 @@ jobs:
       - name: Build Docker image
         run: |
           echo "Building Docker image..."
-          docker build -t $IMAGE_NAME:latest .
+          docker build -t $IMAGE_NAME:latest ./app
 
       # Step 4: Push image to Artifact Registry
       - name: Push Docker image to Artifact Registry
