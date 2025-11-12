@@ -20,70 +20,68 @@ jobs:
       GKE_ZONE: us-central1-a
 
     steps:
+      # Step 1: Checkout repository code
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # ✅ Setup Google Cloud with proper authentication
-      - name: Set up Google Cloud CLI
-        uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ env.PROJECT_ID }}
-          # 🔹 IMPORTANT: store the RAW JSON key in GitHub secret GCP_SERVICE_KEY
-          service_account_key: ${{ secrets.GCP_SERVICE_KEY }}
-          export_default_credentials: true
+      # Step 2: Authenticate to Google Cloud & Artifact Registry
+      - name: Authenticate to Google Cloud
+        run: |
+          echo "${{ secrets.GCP_SERVICE_KEY }}" > key.json
+          gcloud auth activate-service-account --key-file=key.json --project=${{ env.PROJECT_ID }}
+          gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
 
-      # ✅ Authenticate Docker for Artifact Registry
-      - name: Configure Docker for Artifact Registry
-        run: gcloud auth configure-docker "${{ env.REGION }}-docker.pkg.dev" --quiet
-
-      # ✅ Build Docker image
+      # Step 3: Build Docker image
       - name: Build Docker image
         run: |
-          docker build -t $IMAGE_NAME:latest ./app
+          echo "Building Docker image..."
+          docker build -t $IMAGE_NAME:latest .
 
-      # ✅ Tag & Push Docker image to Artifact Registry
-      - name: Tag & Push Docker image
+      # Step 4: Push image to Artifact Registry
+      - name: Push Docker image to Artifact Registry
         run: |
           echo "Pushing image to Artifact Registry..."
           docker tag $IMAGE_NAME:latest $REGION-docker.pkg.dev/$PROJECT_ID/$REPO_NAME/$IMAGE_NAME:latest
           docker push $REGION-docker.pkg.dev/$PROJECT_ID/$REPO_NAME/$IMAGE_NAME:latest
 
-      # ✅ Connect to GKE Cluster
+      # Step 5: Connect to GKE cluster
       - name: Connect to GKE cluster
         run: |
+          echo "Connecting to GKE cluster..."
           gcloud container clusters get-credentials $CLUSTER_NAME --zone $GKE_ZONE --project $PROJECT_ID
 
-      # ✅ Apply Kubernetes manifests
-      - name: Apply Kubernetes manifests
+      # Step 6: Apply Kubernetes manifests
+      - name: Deploy to GKE
         run: |
+          echo "Applying Kubernetes manifests..."
           kubectl apply -f k8s/deployment.yaml
           kubectl apply -f k8s/service.yaml
           kubectl apply -f k8s/hpa.yaml
 
-      # ✅ Wait for external LoadBalancer IP
+      # Step 7: Wait for LoadBalancer IP
       - name: Wait for LoadBalancer IP
         run: |
-          echo "Waiting for external service IP..."
+          echo "Waiting for external IP..."
           sleep 60
           kubectl get svc $SERVICE_NAME -o wide
 
-      # ✅ Install wrk for stress testing
-      - name: Install wrk (load testing tool)
+      # Step 8: Install wrk (load testing tool)
+      - name: Install wrk
         run: |
           sudo apt-get update
           sudo apt-get install -y wrk
 
-      # ✅ Run stress test with 1000 concurrent requests
-      - name: Run stress test (1000 concurrent requests)
+      # Step 9: Run stress test with 1000 concurrent requests
+      - name: Stress Test Deployment (1000 requests)
         run: |
           EXTERNAL_IP=$(kubectl get svc $SERVICE_NAME -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
-          echo "Testing endpoint at: http://$EXTERNAL_IP/predict"
+          echo "Testing endpoint: http://$EXTERNAL_IP/predict"
           wrk -t4 -c1000 -d30s -s tests/wrk_script.lua http://$EXTERNAL_IP/predict
 
-      # ✅ Observe autoscaling metrics
+      # Step 10: Observe autoscaling
       - name: Observe Autoscaling
         run: |
-          echo "Current pods and HPA metrics:"
+          echo "Current pod status and autoscaling info:"
           kubectl get pods -o wide
           kubectl get hpa
           kubectl top pods || true
