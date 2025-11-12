@@ -39,7 +39,7 @@ jobs:
       # ✅ Build Docker image
       - name: Build Docker image
         run: |
-          docker build -t $IMAGE_NAME:latest .
+          docker build -t $IMAGE_NAME:latest ./app
 
       # ✅ Tag & Push Docker image to Artifact Registry
       - name: Tag & Push Docker image
